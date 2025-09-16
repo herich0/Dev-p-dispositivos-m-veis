@@ -1,47 +1,13 @@
+// gerador_senha_page.dart
 import 'package:apk_invertexto/service/invertexto_service.dart';
 import 'package:flutter/material.dart';
 
-class BuscaCepPage extends StatefulWidget {
-  const BuscaCepPage({super.key});
-
-  @override
-  State<BuscaCepPage> createState() => _BuscaCepPageState();
-}
-
-class _BuscaCepPageState extends State<BuscaCepPage> {
-  final TextEditingController _controller = TextEditingController();
-  final apiservice = InvertextoService();
-
-  Widget exibeResultado(BuildContext context, AsyncSnapshot snapshot) {
-    if (snapshot.hasError) {
-      return Text(
-        'CEP inválido ou não encontrado.',
-        style: TextStyle(fontSize: 18, color: Colors.red),
-      );
-    }
-    String enderecoCompleto = "";
-    if (snapshot.data != null) {
-      enderecoCompleto += snapshot.data["street"] ?? "Rua não disponível";
-      enderecoCompleto += "\n";
-      enderecoCompleto +=
-          snapshot.data["neighborhood"] ?? "Bairro não disponível";
-      enderecoCompleto += "\n";
-      enderecoCompleto += snapshot.data["city"] ?? "Cidade não disponível";
-      enderecoCompleto += "\n";
-      enderecoCompleto += snapshot.data["state"] ?? "Estado não disponível";
-    }
-    return Padding(
-      padding: EdgeInsets.only(top: 10.0),
-      child: Text(
-        enderecoCompleto,
-        style: TextStyle(fontSize: 20, color: Colors.white),
-        softWrap: true,
-      ),
-    );
-  }
+class GeradorSenhaPage extends StatelessWidget {
+  const GeradorSenhaPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final apiservice = InvertextoService();
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.black,
@@ -68,21 +34,13 @@ class _BuscaCepPageState extends State<BuscaCepPage> {
         padding: EdgeInsets.all(10),
         child: Column(
           children: <Widget>[
-            TextField(
-              controller: _controller,
-              onChanged: (text) {
-                setState(() {});
-              },
-              decoration: InputDecoration(
-                labelText: "Digite um CEP",
-                labelStyle: TextStyle(color: Colors.white),
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
+            Text(
+              "Sua Senha Gerada:",
+              style: TextStyle(fontSize: 20, color: Colors.white),
             ),
             Expanded(
               child: FutureBuilder(
-                future: apiservice.buscaCep(_controller.text),
+                future: apiservice.geraSenha(),
                 builder: (context, snapshot) {
                   switch (snapshot.connectionState) {
                     case ConnectionState.waiting:
@@ -107,7 +65,14 @@ class _BuscaCepPageState extends State<BuscaCepPage> {
                           ),
                         );
                       } else {
-                        return exibeResultado(context, snapshot);
+                        return Padding(
+                          padding: EdgeInsets.only(top: 10.0),
+                          child: Text(
+                            snapshot.data?["password"] ?? '', // A correção foi aplicada aqui
+                            style: TextStyle(fontSize: 20, color: Colors.white),
+                            softWrap: true,
+                          ),
+                        );
                       }
                   }
                 },
