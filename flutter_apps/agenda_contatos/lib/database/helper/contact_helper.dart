@@ -1,4 +1,5 @@
 import 'package:agenda_contatos/database/model/contact_model.dart';
+import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
 class ContactHelper {
@@ -18,14 +19,14 @@ class ContactHelper {
   }
 
   Future<Database> initDb() async {
-    final databasesPath = await getDatabasesPath();
-    final path = '$databasesPath/contacts.db';
+    final databasePath = await getDatabasesPath();
+    final path = join(databasePath, "contactsDB.db");
     return await openDatabase(
       path,
       version: 1,
-      onCreate: (Database db, int newerVersion) async {
+      onCreate: (Database db, int newVersion) async {
         await db.execute(
-          "CREATE TABLE $tableContact($idColumn INTEGER PRIMARY KEY, $nameColumn TEXT, $emailColumn TEXT, $phoneColumn TEXT, $imageColumn TEXT)",
+          "CREATE TABLE $contactTable($idColumn INTEGER PRIMARY KEY, $nameColumn TEXT, $emailColumn TEXT, $phoneColumn TEXT, $imageColumn TEXT)",
         );
       },
     );
@@ -33,14 +34,14 @@ class ContactHelper {
 
   Future<Contact> saveContact(Contact contact) async {
     Database dbContact = await db;
-    contact.id = await dbContact.insert(tableContact, contact.toMap());
+    contact.id = await dbContact.insert(contactTable, contact.toMap());
     return contact;
   }
 
   Future<Contact?> getContact(int id) async {
     Database dbContact = await db;
     List<Map<String, dynamic>> maps = await dbContact.query(
-      tableContact,
+      contactTable,
       columns: [idColumn, nameColumn, emailColumn, phoneColumn, imageColumn],
       where: "$idColumn = ?",
       whereArgs: [id],
@@ -54,30 +55,23 @@ class ContactHelper {
 
   Future<List<Contact>> getAllContacts() async {
     Database dbContact = await db;
-    List<Map> maps = await dbContact.query(
-      tableContact,
-      columns: [idColumn, nameColumn, emailColumn, phoneColumn, imageColumn],
-    );
-    List<Contact> contacts = [];
-    for (var map in maps) {
-      contacts.add(Contact.fromMap(map as Map<String, dynamic>));
+    List<Map<String, dynamic>> listMap = await dbContact.query(contactTable);
+    List<Contact> listContact = [];
+    for (Map<String, dynamic> m in listMap) {
+      listContact.add(Contact.fromMap(m));
     }
-    return contacts;
+    return listContact;
   }
 
   Future<int> deleteContact(int id) async {
     Database dbContact = await db;
-    return await dbContact.delete(
-      tableContact,
-      where: "$idColumn = ?",
-      whereArgs: [id],
-    );
+    return await dbContact.delete(contactTable, where: "$idColumn = ?", whereArgs: [id]);
   }
 
   Future<int> updateContact(Contact contact) async {
     Database dbContact = await db;
     return await dbContact.update(
-      tableContact,
+      contactTable,
       contact.toMap(),
       where: "$idColumn = ?",
       whereArgs: [contact.id],

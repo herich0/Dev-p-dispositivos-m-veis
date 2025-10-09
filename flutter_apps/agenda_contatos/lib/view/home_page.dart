@@ -1,8 +1,10 @@
 import 'dart:io';
-
 import 'package:agenda_contatos/database/helper/contact_helper.dart';
 import 'package:agenda_contatos/database/model/contact_model.dart';
+import 'package:agenda_contatos/view/contact_page.dart';
 import 'package:flutter/material.dart';
+
+enum OrderOptions { orderAZ, orderZA }
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,40 +21,46 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     helper.getAllContacts().then((list) {
+      print(list);
       setState(() {
         contacts = list;
       });
     });
-    
-    /* Contact c = Contact(
-      name: "Herich Gabriel de Campos",
-      email: "herich@gmail.com",
-      phone: "4242424242",
-      image: "null",
-    );
-    helper.saveContact(c); 
-    helper.getAllContacts().then((list){
-      print(list);
-    }); */
-    // pra testar o banco salva o contato e depois printa a lista
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Contatos"),
-        centerTitle: true,
+        title: Text("Agenda de Contatos"),
         backgroundColor: Colors.blue,
+        centerTitle: true,
+        actions: <Widget>[
+          PopupMenuButton<OrderOptions>(
+            itemBuilder: (context) => <PopupMenuEntry<OrderOptions>>[
+              const PopupMenuItem<OrderOptions>(
+                value: OrderOptions.orderAZ,
+                child: Text("Ordenar de A-Z"),
+              ),
+              const PopupMenuItem<OrderOptions>(
+                value: OrderOptions.orderZA,
+                child: Text("Ordenar de Z-A"),
+              ),
+            ],
+            onSelected: _orderList,
+          ),
+        ],
       ),
       backgroundColor: Colors.white,
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        backgroundColor: Colors.red,
+        onPressed: () {
+          _showContactPage();
+        },
+        backgroundColor: Colors.blue,
         child: Icon(Icons.add),
       ),
       body: ListView.builder(
-        padding: const EdgeInsets.all(10.0),
+        padding: EdgeInsets.all(10.0),
         itemCount: contacts.length,
         itemBuilder: (context, index) {
           return _contactCard(context, index);
@@ -60,11 +68,12 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
   Widget _contactCard(BuildContext context, int index) {
     return GestureDetector(
       child: Card(
         child: Padding(
-          padding: const EdgeInsets.all(10.0),
+          padding: EdgeInsets.all(10.0),
           child: Row(
             children: <Widget>[
               Container(
@@ -73,37 +82,32 @@ class _HomePageState extends State<HomePage> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   image: DecorationImage(
-                    image: contacts[index].image != null
-                        ? FileImage(File(contacts[index].image!))
-                        : const AssetImage("assets/imgs/avatar.png") // colocar um icone de avatar depois
-                            as ImageProvider,
-                    fit: BoxFit.cover,
+                    image: contacts[index].img != null
+                        ? FileImage(File(contacts[index].img!))
+                        : AssetImage("assets/imgs/profile2.png")
+                              as ImageProvider,
                   ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.only(left: 10.0),
+                padding: EdgeInsets.only(left: 10.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
                       contacts[index].name ?? "",
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 22.0,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
                       contacts[index].email ?? "",
-                      style: const TextStyle(
-                        fontSize: 18.0,
-                      ),
+                      style: TextStyle(fontSize: 16.0),
                     ),
                     Text(
                       contacts[index].phone ?? "",
-                      style: const TextStyle(
-                        fontSize: 18.0,
-                      ),
+                      style: TextStyle(fontSize: 16.0),
                     ),
                   ],
                 ),
@@ -112,6 +116,97 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
+      onTap: () {
+        _showOptions(context, index);
+      },
     );
+  }
+
+  void _showOptions(BuildContext context, int index) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return BottomSheet(
+          onClosing: () {},
+          builder: (context) {
+            return Container(
+              padding: EdgeInsets.all(10.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  TextButton(
+                    child: Text(
+                      "Ligar",
+                      style: TextStyle(color: Colors.green, fontSize: 20.0),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      // Implementar a funcionalidade de ligar
+                    },
+                  ),
+                  TextButton(
+                    child: Text(
+                      "Editar",
+                      style: TextStyle(color: Colors.blue, fontSize: 20.0),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _showContactPage(contact: contacts[index]);
+                    },
+                  ),
+                  TextButton(
+                    child: Text(
+                      "Excluir",
+                      style: TextStyle(color: Colors.red, fontSize: 20.0),
+                    ),
+                    onPressed: () {
+                      if (contacts[index].id != null) {
+                        helper.deleteContact(contacts[index].id!);
+                        setState(() {
+                          contacts.removeAt(index);
+                          Navigator.pop(context);
+                        });
+                      }
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showContactPage({Contact? contact}) async {
+    final updatedContact = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => ContactPage(contact: contact)),
+    );
+    if (updatedContact != null) {
+      setState(() {
+        helper.getAllContacts().then((list) {
+          setState(() {
+            contacts = list;
+          });
+        });
+      });
+    }
+  }
+
+  void _orderList(OrderOptions result) {
+    switch (result) {
+      case OrderOptions.orderAZ:
+        contacts.sort((a, b) {
+          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        });
+        break;
+      case OrderOptions.orderZA:
+        contacts.sort((a, b) {
+          return b.name.toLowerCase().compareTo(a.name.toLowerCase());
+        });
+        break;
+    }
+    setState(() {});
   }
 }
