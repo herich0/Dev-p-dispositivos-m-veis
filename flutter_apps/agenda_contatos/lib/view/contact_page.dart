@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:agenda_contatos/database/helper/contact_helper.dart';
 import 'package:agenda_contatos/database/model/contact_model.dart';
 import 'package:flutter/material.dart';
@@ -20,9 +19,9 @@ class _ContactPageState extends State<ContactPage> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _imgController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
   final ContactHelper _helper = ContactHelper();
+
   final phoneMask = MaskTextInputFormatter(
     mask: '(##) #####-####',
     filter: {"#": RegExp(r'[0-9]')},
@@ -38,7 +37,6 @@ class _ContactPageState extends State<ContactPage> {
       _nameController.text = _editContact?.name ?? "";
       _emailController.text = _editContact?.email ?? "";
       _phoneController.text = _editContact?.phone ?? "";
-      _imgController.text = _editContact?.img ?? "";
     }
   }
 
@@ -47,13 +45,13 @@ class _ContactPageState extends State<ContactPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
-        title: Text(_editContact?.name ?? "Novo Contato"),
+        title: Text(_editContact?.name?.isNotEmpty == true
+            ? _editContact!.name
+            : "Novo Contato"),
         centerTitle: true,
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _saveContact();
-        },
+        onPressed: _saveContact,
         backgroundColor: Colors.blue,
         child: Icon(Icons.save),
       ),
@@ -62,19 +60,18 @@ class _ContactPageState extends State<ContactPage> {
         child: Column(
           children: <Widget>[
             GestureDetector(
-              onTap: () => _selectImage(),
+              onTap: _selectImage,
               child: Container(
                 width: 140.0,
                 height: 140.0,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   image: DecorationImage(
-                    image:
-                        _editContact?.img != null &&
+                    image: _editContact?.img != null &&
                             _editContact!.img!.isNotEmpty
                         ? FileImage(File(_editContact!.img!))
-                        : AssetImage("assets/imgs/profile2.png")
-                              as ImageProvider,
+                        : const AssetImage("assets/imgs/profile2.png")
+                            as ImageProvider,
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -85,9 +82,7 @@ class _ContactPageState extends State<ContactPage> {
               decoration: InputDecoration(labelText: "Nome"),
               onChanged: (text) {
                 _userEdited = true;
-                setState(() {
-                  _editContact?.name = text;
-                });
+                _editContact?.name = text;
               },
             ),
             TextField(
@@ -95,9 +90,7 @@ class _ContactPageState extends State<ContactPage> {
               decoration: InputDecoration(labelText: "Email"),
               onChanged: (text) {
                 _userEdited = true;
-                setState(() {
-                  _editContact?.email = text;
-                });
+                _editContact?.email = text;
               },
               keyboardType: TextInputType.emailAddress,
             ),
@@ -106,9 +99,7 @@ class _ContactPageState extends State<ContactPage> {
               decoration: InputDecoration(labelText: "Telefone"),
               onChanged: (text) {
                 _userEdited = true;
-                setState(() {
-                  _editContact?.phone = text;
-                });
+                _editContact?.phone = text;
               },
               keyboardType: TextInputType.phone,
               inputFormatters: [phoneMask],
@@ -129,20 +120,40 @@ class _ContactPageState extends State<ContactPage> {
   }
 
   void _saveContact() {
-    if (_editContact?.img == "") {
-      _editContact?.img = null;
+    final email = _emailController.text.trim();
+    final phone = _phoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
+
+    // Validação de nome
+    if (_editContact?.name == null || _editContact!.name!.isEmpty) {
+      _showMessage("Nome é obrigatório");
+      return;
     }
-    if (_editContact?.name != null && _editContact!.name!.isNotEmpty) {
-      if (_editContact?.id != null) {
-        _helper.updateContact(_editContact!);
-      } else {
-        _helper.saveContact(_editContact!);
-      }
-      Navigator.pop(context, _editContact);
+
+    // Validação de e-mail (regex simples)
+    final emailRegex = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$');
+    if (email.isNotEmpty && !emailRegex.hasMatch(email)) {
+      _showMessage("Email inválido");
+      return;
+    }
+
+    // Validação de tamanho do telefone
+    if (phone.length < 10 || phone.length > 11) {
+      _showMessage("Telefone deve ter 10 ou 11 dígitos");
+      return;
+    }
+
+    // Salvar
+    if (_editContact?.id != null) {
+      _helper.updateContact(_editContact!);
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Nome é Obrigatório")));
+      _helper.saveContact(_editContact!);
     }
+    Navigator.pop(context, _editContact);
+  }
+
+  void _showMessage(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg)),
+    );
   }
 }

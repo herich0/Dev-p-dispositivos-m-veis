@@ -20,8 +20,11 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    _loadContacts();
+  }
+
+  void _loadContacts() {
     helper.getAllContacts().then((list) {
-      print(list);
       setState(() {
         contacts = list;
       });
@@ -84,8 +87,9 @@ class _HomePageState extends State<HomePage> {
                   image: DecorationImage(
                     image: contacts[index].img != null
                         ? FileImage(File(contacts[index].img!))
-                        : AssetImage("assets/imgs/profile2.png")
-                              as ImageProvider,
+                        : const AssetImage("assets/imgs/profile2.png")
+                            as ImageProvider,
+                    fit: BoxFit.cover,
                   ),
                 ),
               ),
@@ -141,7 +145,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                     onPressed: () {
                       Navigator.pop(context);
-                      // Implementar a funcionalidade de ligar
+                      // Implementar a funcionalidade de ligar se desejar
                     },
                   ),
                   TextButton(
@@ -159,12 +163,14 @@ class _HomePageState extends State<HomePage> {
                       "Excluir",
                       style: TextStyle(color: Colors.red, fontSize: 20.0),
                     ),
-                    onPressed: () {
-                      if (contacts[index].id != null) {
-                        helper.deleteContact(contacts[index].id!);
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      bool? confirmDelete = await _confirmDelete(context);
+                      if (confirmDelete == true &&
+                          contacts[index].id != null) {
+                        await helper.deleteContact(contacts[index].id!);
                         setState(() {
                           contacts.removeAt(index);
-                          Navigator.pop(context);
                         });
                       }
                     },
@@ -178,33 +184,49 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Future<bool?> _confirmDelete(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Excluir Contato"),
+        content:
+            const Text("Tem certeza que deseja excluir este contato?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancelar"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              "Excluir",
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showContactPage({Contact? contact}) async {
     final updatedContact = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => ContactPage(contact: contact)),
     );
     if (updatedContact != null) {
-      setState(() {
-        helper.getAllContacts().then((list) {
-          setState(() {
-            contacts = list;
-          });
-        });
-      });
+      _loadContacts();
     }
   }
 
   void _orderList(OrderOptions result) {
     switch (result) {
       case OrderOptions.orderAZ:
-        contacts.sort((a, b) {
-          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-        });
+        contacts.sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
         break;
       case OrderOptions.orderZA:
-        contacts.sort((a, b) {
-          return b.name.toLowerCase().compareTo(a.name.toLowerCase());
-        });
+        contacts.sort(
+            (a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()));
         break;
     }
     setState(() {});
