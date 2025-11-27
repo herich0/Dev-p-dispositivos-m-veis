@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1047158654382",
+    "project_id": "tft-community-p3-61ba8",
+    "storage_bucket": "tft-community-p3-61ba8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1047158654382:android:c8e284c421a29d7167743f",
+        "android_client_info": {
+          "package_name": "com.example.api_tft_trab1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyANPHaJ1Q79hfeCA4xn4tOqGbGQa84-Djw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
